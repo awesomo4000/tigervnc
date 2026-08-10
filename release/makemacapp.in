@@ -49,8 +49,28 @@ for lang in `cat "$SRCDIR/po/LINGUAS"`; do
 		"$APPROOT/Contents/Resources/locale/$lang/LC_MESSAGES/tigervnc.mo"
 done
 
+# Copy in any libraries we link against that aren't part of the system,
+# so that the bundle works on machines without a matching set of
+# development packages installed
+if command -v dylibbundler >/dev/null 2>&1; then
+	dylibbundler -of -b -cd \
+		-x "$APPROOT/Contents/MacOS/vncviewer" \
+		-d "$APPROOT/Contents/Frameworks" \
+		-p @executable_path/../Frameworks
+else
+	echo "WARNING: dylibbundler not found, the bundle will only run on" \
+	     "machines that have the same libraries installed" >&2
+fi
+
+# An ad-hoc signature is enough to let the bundle start on Apple
+# Silicon. It is not a substitute for a real signature and the bundle
+# will still be quarantined when downloaded.
+codesign --force --deep --sign - "$APPROOT"
+
 install -m 644 $SRCDIR/LICENCE.TXT $TMPDIR/dmg/
 install -m 644 $SRCDIR/README.rst $TMPDIR/dmg/
+
+ln -s /Applications "$TMPDIR/dmg/Applications"
 
 hdiutil create -fs HFS+ -volname $PACKAGE_NAME-$VERSION \
 	-srcfolder "$TMPDIR/dmg" \
