@@ -23,6 +23,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <list>
+#include <string>
 
 #include <core/i18n.h>
 #include <core/string.h>
@@ -41,6 +42,7 @@
 #include "OptionsDialog.h"
 #include "ShortcutHandler.h"
 #include "parameters.h"
+#include "vncviewer.h"
 
 #include "fltk/layout.h"
 #include "fltk/util.h"
@@ -56,6 +58,7 @@
 #endif
 
 #include <FL/Fl.H>
+#include <FL/fl_ask.H>
 #include <FL/Fl_Box.H>
 #include <FL/Fl_Tabs.H>
 #include <FL/Fl_Button.H>
@@ -69,6 +72,10 @@
 std::map<OptionsCallback*, void*> OptionsDialog::callbacks;
 
 static std::set<OptionsDialog *> instances;
+
+// The server the settings will be saved against. Only relevant before
+// we've connected, as we don't know the name at that point.
+static std::string pendingServerName;
 
 OptionsDialog::OptionsDialog()
   : Fl_Window(580, 480, _("TigerVNC options"))
@@ -102,8 +109,14 @@ OptionsDialog::OptionsDialog()
 
   navigation->end();
 
-  x = w() - BUTTON_WIDTH * 2 - INNER_MARGIN - OUTER_MARGIN;
+  x = OUTER_MARGIN;
   y = h() - BUTTON_HEIGHT - OUTER_MARGIN;
+
+  button = new Fl_Button(x, y, BUTTON_WIDTH + INNER_MARGIN, BUTTON_HEIGHT,
+                         _("Save as defaults"));
+  button->callback(this->handleSaveDefaults, this);
+
+  x = w() - BUTTON_WIDTH * 2 - INNER_MARGIN - OUTER_MARGIN;
 
   button = new Fl_Button(x, y, BUTTON_WIDTH, BUTTON_HEIGHT, _("Cancel"));
   button->callback(this->handleCancel, this);
@@ -132,9 +145,14 @@ OptionsDialog::~OptionsDialog()
 }
 
 
-void OptionsDialog::showDialog(void)
+void OptionsDialog::showDialog(const char* servername)
 {
   static OptionsDialog *dialog = nullptr;
+
+  if (servername != nullptr)
+    pendingServerName = servername;
+  else
+    pendingServerName = vncServerName;
 
   if (!dialog)
     dialog = new OptionsDialog();
@@ -1454,6 +1472,23 @@ void OptionsDialog::handleOK(Fl_Widget* /*widget*/, void *data)
   dialog->hide();
 
   dialog->storeOptions();
+}
+
+
+void OptionsDialog::handleSaveDefaults(Fl_Widget* /*widget*/, void *data)
+{
+  OptionsDialog *dialog = (OptionsDialog*)data;
+
+  dialog->storeOptions();
+
+  try {
+    saveViewerParameters(nullptr, pendingServerName.c_str());
+  } catch (std::exception& e) {
+    fl_alert(_("Unable to save the default configuration: %s"), e.what());
+    return;
+  }
+
+  dialog->hide();
 }
 
 int OptionsDialog::fltk_event_handler(int event)

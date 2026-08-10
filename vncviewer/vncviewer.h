@@ -21,6 +21,8 @@
 
 #define VNCSERVERNAMELEN 256
 
+extern char vncServerName[VNCSERVERNAMELEN];
+
 void abort_vncviewer(const char *error, ...)
   __attribute__((__format__ (__printf__, 1, 2)));
 void abort_connection(const char *error, ...)

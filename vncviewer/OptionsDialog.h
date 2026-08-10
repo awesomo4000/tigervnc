@@ -42,7 +42,7 @@ protected:
   ~OptionsDialog();
 
 public:
-  static void showDialog(void);
+  static void showDialog(const char* servername = nullptr);
 
   static void addCallback(OptionsCallback *cb, void *data = nullptr);
   static void removeCallback(OptionsCallback *cb);
@@ -76,6 +76,7 @@ protected:
   static void handleFullScreenMode(Fl_Widget *widget, void *data);
 
   static void handleCancel(Fl_Widget *widget, void *data);
+  static void handleSaveDefaults(Fl_Widget *widget, void *data);
   static void handleOK(Fl_Widget *widget, void *data);
 
 protected:
