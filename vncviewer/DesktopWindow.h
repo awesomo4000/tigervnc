@@ -111,6 +111,10 @@ private:
 
   void repositionWidgets();
 
+  // Adjust the viewport size to either match the remote framebuffer
+  // or, when scaling is enabled, to fit the window
+  void updateViewportSize();
+
   static void handleClose(Fl_Widget *wnd, void *data);
 
   static void handleOptions(void *data);

@@ -71,7 +71,8 @@ static void render(CGContextRef gc, CGColorSpaceRef lut,
                    const unsigned char* data,
                    CGBlendMode mode, CGFloat alpha,
                    int src_x, int src_y, int src_w, int src_h,
-                   int x, int y, int w, int h)
+                   int crop_w, int crop_h,
+                   CGFloat x, CGFloat y, CGFloat w, CGFloat h)
 {
   CGRect rect;
   CGImageRef image, subimage;
@@ -80,8 +81,8 @@ static void render(CGContextRef gc, CGColorSpaceRef lut,
 
   rect.origin.x = src_x;
   rect.origin.y = src_y;
-  rect.size.width = w;
-  rect.size.height = h;
+  rect.size.width = crop_w;
+  rect.size.height = crop_h;
 
   subimage = CGImageCreateWithImageInRect(image, rect);
   if (!subimage)
@@ -153,7 +154,8 @@ void Surface::draw(int src_x, int src_y, int dst_x, int dst_y,
 
   lut = cocoa_win_color_space(Fl_Window::current());
   render(fl_gc, lut, data, kCGBlendModeCopy, 1.0,
-         src_x, src_y, width(), height(), dst_x, dst_y, dst_w, dst_h);
+         src_x, src_y, width(), height(), dst_w, dst_h,
+         dst_x, dst_y, dst_w, dst_h);
   CGColorSpaceRelease(lut);
 
   CGContextRestoreGState(fl_gc);
@@ -170,7 +172,52 @@ void Surface::draw(Surface* dst, int src_x, int src_y,
   dst_y = dst->height() - (dst_y + dst_h);
 
   render(bitmap, srgb, data, kCGBlendModeCopy, 1.0,
-         src_x, src_y, width(), height(), dst_x, dst_y, dst_w, dst_h);
+         src_x, src_y, width(), height(), dst_w, dst_h,
+         dst_x, dst_y, dst_w, dst_h);
+
+  CGContextRelease(bitmap);
+}
+
+void Surface::draw(int src_x, int src_y, int src_w, int src_h,
+                   int dst_x, int dst_y, int dst_w, int dst_h)
+{
+  CGColorSpaceRef lut;
+
+  CGContextSaveGState(fl_gc);
+
+  // Reset the transformation matrix back to the default identity
+  // matrix as otherwise we get a massive performance hit
+  CGContextConcatCTM(fl_gc, CGAffineTransformInvert(CGContextGetCTM(fl_gc)));
+
+  // macOS Coordinates are from bottom left, not top left
+  dst_y = Fl_Window::current()->h() - (dst_y + dst_h);
+
+  CGContextSetInterpolationQuality(fl_gc, kCGInterpolationHigh);
+
+  lut = cocoa_win_color_space(Fl_Window::current());
+  render(fl_gc, lut, data, kCGBlendModeCopy, 1.0,
+         src_x, src_y, width(), height(), src_w, src_h,
+         dst_x, dst_y, dst_w, dst_h);
+  CGColorSpaceRelease(lut);
+
+  CGContextRestoreGState(fl_gc);
+}
+
+void Surface::draw(Surface* dst, int src_x, int src_y, int src_w, int src_h,
+                   int dst_x, int dst_y, int dst_w, int dst_h)
+{
+  CGContextRef bitmap;
+
+  bitmap = make_bitmap(dst->width(), dst->height(), dst->data);
+
+  // macOS Coordinates are from bottom left, not top left
+  dst_y = dst->height() - (dst_y + dst_h);
+
+  CGContextSetInterpolationQuality(bitmap, kCGInterpolationHigh);
+
+  render(bitmap, srgb, data, kCGBlendModeCopy, 1.0,
+         src_x, src_y, width(), height(), src_w, src_h,
+         dst_x, dst_y, dst_w, dst_h);
 
   CGContextRelease(bitmap);
 }
@@ -191,7 +238,8 @@ void Surface::blend(int src_x, int src_y, int dst_x, int dst_y,
 
   lut = cocoa_win_color_space(Fl_Window::current());
   render(fl_gc, lut, data, kCGBlendModeNormal, (CGFloat)a/255.0,
-         src_x, src_y, width(), height(), dst_x, dst_y, dst_w, dst_h);
+         src_x, src_y, width(), height(), dst_w, dst_h,
+         dst_x, dst_y, dst_w, dst_h);
   CGColorSpaceRelease(lut);
 
   CGContextRestoreGState(fl_gc);
@@ -208,7 +256,8 @@ void Surface::blend(Surface* dst, int src_x, int src_y,
   dst_y = dst->height() - (dst_y + dst_h);
 
   render(bitmap, srgb, data, kCGBlendModeNormal, (CGFloat)a/255.0,
-         src_x, src_y, width(), height(), dst_x, dst_y, dst_w, dst_h);
+         src_x, src_y, width(), height(), dst_w, dst_h,
+         dst_x, dst_y, dst_w, dst_h);
 
   CGContextRelease(bitmap);
 }

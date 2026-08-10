@@ -357,6 +357,8 @@ void OptionsDialog::loadOptions(void)
 
   handleFullScreenMode(selectedMonitorsButton, this);
 
+  scaleToWindowCheckbox->value(scaleToWindow);
+
   /* Misc. */
   sharedCheckbox->value(shared);
   reconnectCheckbox->value(reconnectOnError);
@@ -511,6 +513,8 @@ void OptionsDialog::storeOptions(void)
   }
 
   fullScreenSelectedMonitors.setMonitors(monitorArrangement->value());
+
+  scaleToWindow.setParam(scaleToWindowCheckbox->value());
 
   /* Misc. */
   shared.setParam(sharedCheckbox->value());
@@ -1227,6 +1231,14 @@ void OptionsDialog::createDisplayPage(int tx, int ty, int tw, int th)
   tx = orig_tx;
   ty += INNER_MARGIN;
   width = tw - OUTER_MARGIN * 2;
+
+  scaleToWindowCheckbox =
+    new Fl_Check_Button(LBLRIGHT(tx, ty,
+                                 CHECK_MIN_WIDTH,
+                                 CHECK_HEIGHT,
+                                 _("Scale remote desktop to fit window "
+                                   "(don't resize the remote session)")));
+  ty += CHECK_HEIGHT + TIGHT_MARGIN;
 
   group->end();
 }

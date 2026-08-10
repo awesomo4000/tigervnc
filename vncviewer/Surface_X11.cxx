@@ -22,6 +22,7 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <stdexcept>
 
@@ -59,6 +60,64 @@ void Surface::draw(Surface* dst, int src_x, int src_y,
 {
   XRenderComposite(fl_display, PictOpSrc, picture, None, dst->picture,
                    src_x, src_y, 0, 0, dst_x, dst_y, dst_w, dst_h);
+}
+
+// Configure the source picture so that it is resampled from src_w x
+// src_h to dst_w x dst_h when composited
+static void setScaleTransform(Picture pict,
+                              int src_w, int src_h, int dst_w, int dst_h)
+{
+  XTransform xform;
+
+  memset(&xform, 0, sizeof(xform));
+  xform.matrix[0][0] = XDoubleToFixed((double)src_w / dst_w);
+  xform.matrix[1][1] = XDoubleToFixed((double)src_h / dst_h);
+  xform.matrix[2][2] = XDoubleToFixed(1.0);
+
+  XRenderSetPictureTransform(fl_display, pict, &xform);
+  XRenderSetPictureFilter(fl_display, pict, FilterBilinear, nullptr, 0);
+}
+
+static void clearScaleTransform(Picture pict)
+{
+  XTransform xform;
+
+  memset(&xform, 0, sizeof(xform));
+  xform.matrix[0][0] = XDoubleToFixed(1.0);
+  xform.matrix[1][1] = XDoubleToFixed(1.0);
+  xform.matrix[2][2] = XDoubleToFixed(1.0);
+
+  XRenderSetPictureFilter(fl_display, pict, FilterNearest, nullptr, 0);
+  XRenderSetPictureTransform(fl_display, pict, &xform);
+}
+
+void Surface::draw(int src_x, int src_y, int src_w, int src_h,
+                   int dst_x, int dst_y, int dst_w, int dst_h)
+{
+  Picture winPict;
+
+  setScaleTransform(picture, src_w, src_h, dst_w, dst_h);
+
+  winPict = XRenderCreatePicture(fl_display, fl_window, visFormat, 0, nullptr);
+  // Source coordinates are given in the scaled coordinate space
+  XRenderComposite(fl_display, PictOpSrc, picture, None, winPict,
+                   src_x * dst_w / src_w, src_y * dst_h / src_h, 0, 0,
+                   dst_x, dst_y, dst_w, dst_h);
+  XRenderFreePicture(fl_display, winPict);
+
+  clearScaleTransform(picture);
+}
+
+void Surface::draw(Surface* dst, int src_x, int src_y, int src_w, int src_h,
+                   int dst_x, int dst_y, int dst_w, int dst_h)
+{
+  setScaleTransform(picture, src_w, src_h, dst_w, dst_h);
+
+  XRenderComposite(fl_display, PictOpSrc, picture, None, dst->picture,
+                   src_x * dst_w / src_w, src_y * dst_h / src_h, 0, 0,
+                   dst_x, dst_y, dst_w, dst_h);
+
+  clearScaleTransform(picture);
 }
 
 static Picture alpha_mask(int a)

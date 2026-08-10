@@ -49,6 +49,20 @@ public:
   // Flush updates to screen
   void updateWindow();
 
+  // Change the size of the remote framebuffer. This is independent of
+  // the widget size; if the two differ then the framebuffer is scaled
+  // to fit the widget.
+  void setFramebufferSize(int width, int height);
+
+  int framebufferWidth() const;
+  int framebufferHeight() const;
+
+  // Is the framebuffer currently being scaled to fit the widget?
+  bool isScaled() const;
+
+  // Convert remote framebuffer coordinates to widget local coordinates
+  core::Point remoteToLocal(const core::Point& pos) const;
+
   // New image for the locally rendered cursor
   void setCursor();
 
@@ -76,6 +90,9 @@ protected:
 
 private:
   bool hasFocus();
+
+  // Convert widget local coordinates to remote framebuffer coordinates
+  core::Point localToRemote(int lx, int ly) const;
 
   // Show the currently set (or system) cursor
   void showCursor();

@@ -96,6 +96,57 @@ void Surface::draw(Surface* dst, int src_x, int src_y,
   DeleteDC(dstdc);
 }
 
+void Surface::draw(int src_x, int src_y, int src_w, int src_h,
+                   int dst_x, int dst_y, int dst_w, int dst_h)
+{
+  HDC dc;
+  int oldMode;
+
+  dc = CreateCompatibleDC(fl_gc);
+  if (!dc)
+    throw core::win32_error("CreateCompatibleDC", GetLastError());
+
+  if (!SelectObject(dc, bitmap))
+    throw core::win32_error("SelectObject", GetLastError());
+
+  oldMode = SetStretchBltMode(fl_gc, HALFTONE);
+  SetBrushOrgEx(fl_gc, 0, 0, nullptr);
+
+  if (!StretchBlt(fl_gc, dst_x, dst_y, dst_w, dst_h,
+                  dc, src_x, src_y, src_w, src_h, SRCCOPY)) {
+    // See the comment in the unscaled version of this method
+    if (GetLastError() != ERROR_INVALID_HANDLE) {
+      SetStretchBltMode(fl_gc, oldMode);
+      DeleteDC(dc);
+      throw core::win32_error("StretchBlt", GetLastError());
+    }
+  }
+
+  SetStretchBltMode(fl_gc, oldMode);
+
+  DeleteDC(dc);
+}
+
+void Surface::draw(Surface* dst, int src_x, int src_y, int src_w, int src_h,
+                   int dst_x, int dst_y, int dst_w, int dst_h)
+{
+  HDC origdc, dstdc;
+
+  dstdc = CreateCompatibleDC(nullptr);
+  if (!dstdc)
+    throw core::win32_error("CreateCompatibleDC", GetLastError());
+
+  if (!SelectObject(dstdc, dst->bitmap))
+    throw core::win32_error("SelectObject", GetLastError());
+
+  origdc = fl_gc;
+  fl_gc = dstdc;
+  draw(src_x, src_y, src_w, src_h, dst_x, dst_y, dst_w, dst_h);
+  fl_gc = origdc;
+
+  DeleteDC(dstdc);
+}
+
 void Surface::blend(int /*src_x*/, int /*src_y*/,
                     int /*dst_x*/, int /*dst_y*/,
                     int /*dst_w*/, int /*dst_h*/,

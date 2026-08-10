@@ -383,15 +383,58 @@ void DesktopWindow::resizeFramebuffer(int new_w, int new_h)
 
   // If we're letting the viewport match the window perfectly, then
   // keep things that way for the new size, otherwise just keep things
-  // like they are.
-  if (!fullscreen_active() && !maximized) {
+  // like they are. When scaling we never adjust the window as the
+  // user has already picked the size they want.
+  if (!scaleToWindow && !fullscreen_active() && !maximized) {
     if ((w() == viewport->w()) && (h() == viewport->h()))
       size(new_w, new_h);
   }
 
-  viewport->size(new_w, new_h);
+  viewport->setFramebufferSize(new_w, new_h);
+
+  updateViewportSize();
 
   repositionWidgets();
+}
+
+
+void DesktopWindow::updateViewportSize()
+{
+  int fbWidth, fbHeight;
+  int new_w, new_h;
+
+  fbWidth = viewport->framebufferWidth();
+  fbHeight = viewport->framebufferHeight();
+
+  if ((fbWidth <= 0) || (fbHeight <= 0))
+    return;
+
+  if (scaleToWindow) {
+    // Scale the remote framebuffer to fill as much of the window as
+    // possible without distorting it
+    new_w = w();
+    new_h = (int)((int64_t)new_w * fbHeight / fbWidth);
+    if (new_h > h()) {
+      new_h = h();
+      new_w = (int)((int64_t)new_h * fbWidth / fbHeight);
+    }
+
+    if (new_w < 1)
+      new_w = 1;
+    if (new_h < 1)
+      new_h = 1;
+  } else {
+    new_w = fbWidth;
+    new_h = fbHeight;
+  }
+
+  if ((new_w == viewport->w()) && (new_h == viewport->h()))
+    return;
+
+  viewport->size(new_w, new_h);
+
+  // The area around the viewport may need to be repainted
+  damage(FL_DAMAGE_ALL);
 }
 
 
@@ -411,12 +454,16 @@ void DesktopWindow::setCursor()
 }
 
 
-void DesktopWindow::setCursorPos(const core::Point& pos)
+void DesktopWindow::setCursorPos(const core::Point& remotePos)
 {
+  core::Point pos;
+
   if (!mouseGrabbed) {
     // Do nothing if we do not have the mouse captured.
     return;
   }
+
+  pos = viewport->remoteToLocal(remotePos);
 #if defined(WIN32)
   SetCursorPos(pos.x + x_root() + viewport->x(),
                pos.y + y_root() + viewport->y());
@@ -678,6 +725,8 @@ void DesktopWindow::resize(int x, int y, int w, int h)
 
   if (resizing) {
     remoteResize();
+
+    updateViewportSize();
 
     repositionWidgets();
   }
@@ -1289,6 +1338,8 @@ void DesktopWindow::remoteResize()
 
   if (!::remoteResize)
     return;
+  if (scaleToWindow)
+    return;
   if (!cc->server.supportsSetDesktopSize)
     return;
 
@@ -1585,6 +1636,11 @@ void DesktopWindow::handleOptions(void *data)
     self->fullscreen_on();
   else if (!fullScreen && self->fullscreen_active())
     self->fullscreen_off();
+
+  // Scaling may have been turned on or off
+  self->updateViewportSize();
+  self->repositionWidgets();
+  self->remoteResize();
 }
 
 void DesktopWindow::handleFullscreenTimeout(void *data)
