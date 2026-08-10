@@ -21,6 +21,7 @@
 #endif
 
 #include <assert.h>
+#include <math.h>
 
 #include <stdexcept>
 
@@ -65,6 +66,22 @@ static CGImageRef create_image(CGColorSpaceRef lut,
     throw std::runtime_error("CGImageCreate");
 
   return image;
+}
+
+// The FLTK coordinates we get are in points, but we render directly
+// in the backing store's pixels, so we need to know the ratio between
+// the two
+static CGFloat context_scale(CGContextRef gc)
+{
+  CGAffineTransform ctm;
+  CGFloat scale;
+
+  ctm = CGContextGetCTM(gc);
+  scale = fabs(ctm.a);
+  if (scale < 1.0)
+    scale = 1.0;
+
+  return scale;
 }
 
 static void render(CGContextRef gc, CGColorSpaceRef lut,
@@ -142,6 +159,9 @@ void Surface::draw(int src_x, int src_y, int dst_x, int dst_y,
                    int dst_w, int dst_h)
 {
   CGColorSpaceRef lut;
+  CGFloat scale;
+
+  scale = context_scale(fl_gc);
 
   CGContextSaveGState(fl_gc);
 
@@ -155,7 +175,7 @@ void Surface::draw(int src_x, int src_y, int dst_x, int dst_y,
   lut = cocoa_win_color_space(Fl_Window::current());
   render(fl_gc, lut, data, kCGBlendModeCopy, 1.0,
          src_x, src_y, width(), height(), dst_w, dst_h,
-         dst_x, dst_y, dst_w, dst_h);
+         dst_x * scale, dst_y * scale, dst_w * scale, dst_h * scale);
   CGColorSpaceRelease(lut);
 
   CGContextRestoreGState(fl_gc);
@@ -182,6 +202,9 @@ void Surface::draw(int src_x, int src_y, int src_w, int src_h,
                    int dst_x, int dst_y, int dst_w, int dst_h)
 {
   CGColorSpaceRef lut;
+  CGFloat scale;
+
+  scale = context_scale(fl_gc);
 
   CGContextSaveGState(fl_gc);
 
@@ -197,7 +220,7 @@ void Surface::draw(int src_x, int src_y, int src_w, int src_h,
   lut = cocoa_win_color_space(Fl_Window::current());
   render(fl_gc, lut, data, kCGBlendModeCopy, 1.0,
          src_x, src_y, width(), height(), src_w, src_h,
-         dst_x, dst_y, dst_w, dst_h);
+         dst_x * scale, dst_y * scale, dst_w * scale, dst_h * scale);
   CGColorSpaceRelease(lut);
 
   CGContextRestoreGState(fl_gc);
@@ -226,6 +249,9 @@ void Surface::blend(int src_x, int src_y, int dst_x, int dst_y,
                     int dst_w, int dst_h, int a)
 {
   CGColorSpaceRef lut;
+  CGFloat scale;
+
+  scale = context_scale(fl_gc);
 
   CGContextSaveGState(fl_gc);
 
@@ -239,7 +265,7 @@ void Surface::blend(int src_x, int src_y, int dst_x, int dst_y,
   lut = cocoa_win_color_space(Fl_Window::current());
   render(fl_gc, lut, data, kCGBlendModeNormal, (CGFloat)a/255.0,
          src_x, src_y, width(), height(), dst_w, dst_h,
-         dst_x, dst_y, dst_w, dst_h);
+         dst_x * scale, dst_y * scale, dst_w * scale, dst_h * scale);
   CGColorSpaceRelease(lut);
 
   CGContextRestoreGState(fl_gc);
