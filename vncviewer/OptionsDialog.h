@@ -148,13 +148,14 @@ protected:
   Fl_Box *shortcutsText;
 
   /* Display */
+  Fl_Group *scalingGroup;
+  Fl_Check_Button *scaleLocalViewCheckbox;
   Fl_Group *displayModeGroup;
   Fl_Round_Button *windowedButton;
   Fl_Round_Button *currentMonitorButton;
   Fl_Round_Button *allMonitorsButton;
   Fl_Round_Button *selectedMonitorsButton;
   Fl_Monitor_Arrangement *monitorArrangement;
-  Fl_Check_Button *scaleLocalViewCheckbox;
 
   /* Misc. */
   Fl_Check_Button *sharedCheckbox;

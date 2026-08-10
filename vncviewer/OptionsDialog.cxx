@@ -71,7 +71,7 @@ std::map<OptionsCallback*, void*> OptionsDialog::callbacks;
 static std::set<OptionsDialog *> instances;
 
 OptionsDialog::OptionsDialog()
-  : Fl_Window(580, 420, _("TigerVNC options"))
+  : Fl_Window(580, 480, _("TigerVNC options"))
 {
   int x, y;
   Fl_Navigation *navigation;
@@ -1126,6 +1126,37 @@ void OptionsDialog::createDisplayPage(int tx, int ty, int tw, int th)
 
   orig_tx = tx;
 
+  /* Scaling */
+  ty += GROUP_LABEL_OFFSET;
+  scalingGroup = new Fl_Group(tx, ty, width, 0, _("Scaling"));
+  scalingGroup->labelfont(FL_BOLD);
+  scalingGroup->box(FL_FLAT_BOX);
+  scalingGroup->align(FL_ALIGN_LEFT | FL_ALIGN_TOP);
+
+  {
+    tx += INDENT;
+    ty += TIGHT_MARGIN;
+    width -= INDENT;
+
+    scaleLocalViewCheckbox =
+      new Fl_Check_Button(LBLRIGHT(tx, ty,
+                                   CHECK_MIN_WIDTH,
+                                   CHECK_HEIGHT,
+                                   _("Scale local view to fit window")));
+    ty += CHECK_HEIGHT + TIGHT_MARGIN;
+  }
+  ty -= TIGHT_MARGIN;
+
+  scalingGroup->end();
+  /* Needed for resize to work sanely */
+  scalingGroup->resizable(nullptr);
+  scalingGroup->size(scalingGroup->w(), ty - scalingGroup->y());
+
+  /* Back to normal */
+  tx = orig_tx;
+  ty += INNER_MARGIN;
+  width = tw - OUTER_MARGIN * 2;
+
   /* Display mode */
   ty += GROUP_LABEL_OFFSET;
   displayModeGroup = new Fl_Group(tx, ty, width, 0, _("Display mode"));
@@ -1231,13 +1262,6 @@ void OptionsDialog::createDisplayPage(int tx, int ty, int tw, int th)
   tx = orig_tx;
   ty += INNER_MARGIN;
   width = tw - OUTER_MARGIN * 2;
-
-  scaleLocalViewCheckbox =
-    new Fl_Check_Button(LBLRIGHT(tx, ty,
-                                 CHECK_MIN_WIDTH,
-                                 CHECK_HEIGHT,
-                                 _("Scale local view to fit window")));
-  ty += CHECK_HEIGHT + TIGHT_MARGIN;
 
   group->end();
 }
