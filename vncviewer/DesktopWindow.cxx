@@ -385,7 +385,7 @@ void DesktopWindow::resizeFramebuffer(int new_w, int new_h)
   // keep things that way for the new size, otherwise just keep things
   // like they are. When scaling we never adjust the window as the
   // user has already picked the size they want.
-  if (!scaleToWindow && !fullscreen_active() && !maximized) {
+  if (!scaleLocalView && !fullscreen_active() && !maximized) {
     if ((w() == viewport->w()) && (h() == viewport->h()))
       size(new_w, new_h);
   }
@@ -409,7 +409,7 @@ void DesktopWindow::updateViewportSize()
   if ((fbWidth <= 0) || (fbHeight <= 0))
     return;
 
-  if (scaleToWindow) {
+  if (scaleLocalView) {
     // Scale the remote framebuffer to fill as much of the window as
     // possible without distorting it
     new_w = w();
@@ -1338,7 +1338,7 @@ void DesktopWindow::remoteResize()
 
   if (!::remoteResize)
     return;
-  if (scaleToWindow)
+  if (scaleLocalView)
     return;
   if (!cc->server.supportsSetDesktopSize)
     return;

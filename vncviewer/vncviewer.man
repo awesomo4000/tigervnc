@@ -298,14 +298,14 @@ re-connect will be offered. Default is on.
 .B \-RemoteResize
 Dynamically resize the remote desktop size as the size of the local client
 window changes. Note that this may not work with all VNC servers. This
-setting is ignored when \fBScaleToWindow\fP is enabled.
+setting is ignored when \fBScaleLocalView\fP is enabled.
 .
 .TP
-.B \-ScaleToWindow
-Scale the remote desktop image so that it fits the local window, rather
-than changing the size of the remote desktop. The aspect ratio of the
-remote desktop is preserved, so there may be unused space along two of
-the edges. Default is off.
+.B \-ScaleLocalView
+Scale the local view of the remote desktop so that it fits the local
+window, rather than changing the size of the remote desktop. The aspect
+ratio of the remote desktop is preserved, so there may be unused space
+along two of the edges. Default is off.
 .
 .TP
 .B \-SecurityTypes \fIsec-types\fP

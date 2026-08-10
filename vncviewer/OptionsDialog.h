@@ -154,7 +154,7 @@ protected:
   Fl_Round_Button *allMonitorsButton;
   Fl_Round_Button *selectedMonitorsButton;
   Fl_Monitor_Arrangement *monitorArrangement;
-  Fl_Check_Button *scaleToWindowCheckbox;
+  Fl_Check_Button *scaleLocalViewCheckbox;
 
   /* Misc. */
   Fl_Check_Button *sharedCheckbox;
